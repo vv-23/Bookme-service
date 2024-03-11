@@ -2,3 +2,5 @@
 sandbox/
 node_modules/
 package-lock.json
+.jsconfig
+.vscode/

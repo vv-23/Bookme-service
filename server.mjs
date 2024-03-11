@@ -35,17 +35,46 @@ app.get('/schedule', async (req, res) => {
     console.log("/schedule GET")
     const schedule_data = req.body;
     console.log(schedule_data)
+    let results = undefined;
 
-    let results = await connection.query('SELECT * FROM schedule').catch(
-        (error) => {
-            console.log(error);
-            res.status(500).json(
-                {
-                    message: error.sqlMessage
-                }
-            )
-        }
-    );
+    if ((schedule_data.availability === true) && ("slot" in schedule_data)) {
+        let sql = "SELECT * FROM schedule WHERE startDate < ? AND ? < endDate AND startTime < ? AND ? < endTime"
+        results = await connection.query(sql, [schedule_data.slot.date, schedule_data.slot.date, schedule_data.slot.startTime, schedule_data.slot.endTime]).catch(
+            (error) => {
+                console.log(error);
+                res.status(500).json(
+                    {
+                        message: error.sqlMessage
+                    }
+                )
+            }
+        );
+    }
+    else if ("servicId" in schedule_data) {
+        results = await connection.query("SELECT * FROM schedule WHERE servicId = ?", [schedule_data.servicId]).catch(
+            (error) => {
+                console.log(error);
+                res.status(500).json(
+                    {
+                        message: error.sqlMessage
+                    }
+                )
+            }
+        );
+    }
+    else
+    {
+        results = await connection.query('SELECT * FROM schedule').catch(
+            (error) => {
+                console.log(error);
+                res.status(500).json(
+                    {
+                        message: error.sqlMessage
+                    }
+                )
+            }
+        );
+    }
     if (results) {
         console.log(results[0])
         res.status(200).json(results[0])
@@ -72,5 +101,33 @@ app.post('/schedule', async (req, res) => {
         res.sendStatus(200)
     }
 });
+
+app.delete("/schedule", async(req, res) => {
+    console.log("/schedule DELETE")
+    const schedule_data = req.body;
+    console.log(schedule_data);
+    let results = undefined;
+
+    if (("scheduleID" in schedule_data) && Array.isArray(schedule_data.scheduleID)) {
+        results = await connection.query("DELETE FROM schedule WHERE scheduleID = ?", schedule_data.scheduleID).catch(
+            (error) => {
+                console.log(error);
+                res.status(500).json(
+                    {
+                        message: error.sqlMessage
+                    }
+                )
+            }
+        );
+    }
+    else {
+        res.sendStatus(400)
+        return
+    }
+    if (results) {
+        console.log(results)
+        res.sendStatus(200)
+    }
+})
 
 run();
