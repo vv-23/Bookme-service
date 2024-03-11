@@ -26,8 +26,8 @@ async function run() {
         console.log(error);
         process.exit(1);
     });
-    app.listen(3000, () => {
-        console.log("App listening on port 3000");
+    app.listen(process.env.SERVER_PORT, () => {
+        console.log(`App listening on port ${process.env.SERVER_PORT}`);
     });
 }
 
@@ -98,7 +98,7 @@ app.post('/schedule', async (req, res) => {
     );
     if (results) {
         console.log(results)
-        res.sendStatus(200)
+        res.status(200).json({"scheduleID": results[0].insertId})
     }
 });
 
