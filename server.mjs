@@ -1,6 +1,10 @@
 // Get the client
 import mysql from 'mysql2/promise';
 import express from 'express'
+//const asyncHandler = require('express-async-handler');
+
+
+import { pool } from './db_controller.mjs';
 
 const app = express();
 app.use(express.json())
@@ -9,6 +13,16 @@ app.use(express.json())
  * @type {mysql.Connection}
  */
 let connection = undefined;
+/**
+ * @type {mysql.Pool}
+ */
+let _pool = undefined;
+let config = {
+    host: process.env.SQL_HOST,
+    user: process.env.SQL_USER,
+    password: process.env.SQL_PASSWORD,
+    database: process.env.SQL_DB,
+}
 
 async function run() {
     // Create the connection to database
@@ -16,30 +30,31 @@ async function run() {
     console.log(process.env.SQL_USER)
     console.log(process.env.SQL_PASSWORD)
     console.log(process.env.SQL_DB)*/
-    connection = await mysql.createConnection({
-        host: process.env.SQL_HOST,
-        user: process.env.SQL_USER,
-        password: process.env.SQL_PASSWORD,
-        database: process.env.SQL_DB,
-    }).catch((error) => {
+    /*connection = await mysql.createConnection(config).catch((error) => {
         console.log("Error connecting. Aborting")
         console.log(error);
         process.exit(1);
-    });
+    });*/
+    /*pool = await mysql.createPool(config).catch((error) => {
+        console.log("Error connecting. Aborting");
+        console.log(error);
+        process.exit(1);
+    });*/
+
     app.listen(process.env.SERVER_PORT, () => {
         console.log(`App listening on port ${process.env.SERVER_PORT}`);
     });
 }
 
 app.get('/schedule', async (req, res) => {
-    console.log("/schedule GET")
+    console.log("/schedule GET");
     const schedule_data = req.body;
-    console.log(schedule_data)
+    console.log(schedule_data);
     let results = undefined;
 
     if ((schedule_data.availability === true) && ("slot" in schedule_data)) {
-        let sql = "SELECT * FROM schedule WHERE startDate < ? AND ? < endDate AND startTime < ? AND ? < endTime"
-        results = await connection.query(sql, [schedule_data.slot.date, schedule_data.slot.date, schedule_data.slot.startTime, schedule_data.slot.endTime]).catch(
+        let sql = "SELECT * FROM schedule WHERE startDate < ? AND ? < endDate AND startTime < ? AND ? < endTime";
+        results = await pool.query(sql, [schedule_data.slot.date, schedule_data.slot.date, schedule_data.slot.startTime, schedule_data.slot.endTime]).catch(
             (error) => {
                 console.log(error);
                 res.status(500).json(
@@ -51,7 +66,7 @@ app.get('/schedule', async (req, res) => {
         );
     }
     else if ("servicId" in schedule_data) {
-        results = await connection.query("SELECT * FROM schedule WHERE servicId = ?", [schedule_data.servicId]).catch(
+        results = await pool.query("SELECT * FROM schedule WHERE servicId = ?", [schedule_data.servicId]).catch(
             (error) => {
                 console.log(error);
                 res.status(500).json(
@@ -64,7 +79,7 @@ app.get('/schedule', async (req, res) => {
     }
     else
     {
-        results = await connection.query('SELECT * FROM schedule').catch(
+        results = await pool.query('SELECT * FROM schedule').catch(
             (error) => {
                 console.log(error);
                 res.status(500).json(
@@ -82,11 +97,11 @@ app.get('/schedule', async (req, res) => {
 });
 
 app.post('/schedule', async (req, res) => {
-    console.log("/schedule POST")
+    console.log("/schedule POST");
     const schedule_data = req.body;
     console.log(schedule_data)
 
-    let results = await connection.query('INSERT INTO schedule SET ?', schedule_data).catch(
+    let results = await pool.query('INSERT INTO schedule SET ?', schedule_data).catch(
         (error) => {
             console.log(error);
             res.status(500).json(
@@ -97,8 +112,8 @@ app.post('/schedule', async (req, res) => {
         }
     );
     if (results) {
-        console.log(results)
-        res.status(200).json({"scheduleID": results[0].insertId})
+        console.log(results);
+        res.status(200).json({"scheduleID": results[0].insertId});
     }
 });
 
@@ -109,7 +124,7 @@ app.delete("/schedule", async(req, res) => {
     let results = undefined;
 
     if (("scheduleID" in schedule_data) && Array.isArray(schedule_data.scheduleID)) {
-        results = await connection.query("DELETE FROM schedule WHERE scheduleID = ?", schedule_data.scheduleID).catch(
+        results = await pool.query("DELETE FROM schedule WHERE scheduleID = ?", schedule_data.scheduleID).catch(
             (error) => {
                 console.log(error);
                 res.status(500).json(
@@ -121,12 +136,12 @@ app.delete("/schedule", async(req, res) => {
         );
     }
     else {
-        res.sendStatus(400)
-        return
+        res.sendStatus(400);
+        return;
     }
     if (results) {
-        console.log(results)
-        res.sendStatus(200)
+        console.log(results);
+        res.sendStatus(200);
     }
 })
 
