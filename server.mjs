@@ -48,7 +48,7 @@ async function run() {
 
 app.get('/schedule', async (req, res) => {
     console.log("/schedule GET");
-    const schedule_data = req.body;
+    const schedule_data = req.query;
     console.log(schedule_data);
     let results = undefined;
 
